@@ -38,11 +38,11 @@ export async function GET() {
       );
     }
 
-    // Fetch board structure and cards in parallel
-    const [data, cardsData] = await Promise.all([
-      apiFetch(`/board/${BOARD_ID}`),
-      apiFetch(`/board/${BOARD_ID}/cards`),
-    ]);
+    // Fetch board structure
+    const data = await apiFetch(`/board/${BOARD_ID}`);
+
+    // Cards live at a different endpoint — try /card/board/{id}
+    const cardsData = await apiFetch(`/card/board/${BOARD_ID}`);
 
     const allCards = (cardsData?.cards || []).map((card) => ({
       ...card,
