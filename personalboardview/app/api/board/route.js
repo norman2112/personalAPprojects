@@ -9,15 +9,22 @@ const BOARD_ID = process.env.AGILEPLACE_BOARD_ID;
 const TOKEN = process.env.AGILEPLACE_API_TOKEN;
 
 async function apiFetch(path) {
-  const res = await fetch(`https://${HOST}/io${path}`, {
-    headers: {
-      Authorization: `Bearer ${TOKEN}`,
-      Accept: "application/json",
-    },
-    cache: "no-store",
-  });
-  if (!res.ok) throw new Error(`AgilePlace ${res.status}: ${res.statusText}`);
-  return res.json();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  try {
+    const res = await fetch(`https://${HOST}/io${path}`, {
+      headers: {
+        Authorization: `Bearer ${TOKEN}`,
+        Accept: "application/json",
+      },
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new Error(`AgilePlace ${res.status}: ${res.statusText}`);
+    return res.json();
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 // Lane IDs we care about (skip archive)
@@ -38,10 +45,11 @@ export async function GET() {
       );
     }
 
-    // Fetch board structure
-    const data = await apiFetch(`/board/${BOARD_ID}`);
-
-    const cardsData = await apiFetch(`/board/${BOARD_ID}/card`);
+    // Fetch board structure and cards in parallel
+    const [data, cardsData] = await Promise.all([
+      apiFetch(`/board/${BOARD_ID}`),
+      apiFetch(`/board/${BOARD_ID}/card`),
+    ]);
 
     const allCards = (cardsData?.cards || []).map((card) => ({
       ...card,
