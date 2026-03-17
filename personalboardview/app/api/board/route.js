@@ -38,13 +38,16 @@ export async function GET() {
       );
     }
 
-    // Fetch all cards on the board
-    const data = await apiFetch(`/board/${BOARD_ID}`);
-    const allCards = data?.lanes
-      ? data.lanes.flatMap((lane) =>
-          (lane.cards || []).map((card) => ({ ...card, laneId: lane.id }))
-        )
-      : [];
+    // Fetch board structure and cards in parallel
+    const [data, cardsData] = await Promise.all([
+      apiFetch(`/board/${BOARD_ID}`),
+      apiFetch(`/board/${BOARD_ID}/cards`),
+    ]);
+
+    const allCards = (cardsData?.cards || []).map((card) => ({
+      ...card,
+      laneId: String(card.laneId),
+    }));
 
     // Also grab card types for color mapping
     const cardTypes = data?.cardTypes || [];
@@ -52,7 +55,7 @@ export async function GET() {
     // Build lane → cards map
     const lanes = LANE_CONFIG.map((laneConf) => {
       const cards = allCards
-        .filter((c) => c.laneId === laneConf.id)
+        .filter((c) => String(c.laneId) === String(laneConf.id))
         .map((c) => ({
           id: c.id,
           title: c.title,
