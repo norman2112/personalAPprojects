@@ -41,8 +41,7 @@ export async function GET() {
     // Fetch board structure
     const data = await apiFetch(`/board/${BOARD_ID}`);
 
-    // Cards live at a different endpoint — try /card/board/{id}
-    const cardsData = await apiFetch(`/card/board/${BOARD_ID}`);
+    const cardsData = await apiFetch(`/board/${BOARD_ID}/card`);
 
     const allCards = (cardsData?.cards || []).map((card) => ({
       ...card,
@@ -59,18 +58,14 @@ export async function GET() {
         .map((c) => ({
           id: c.id,
           title: c.title,
-          header: c.customId?.value || c.customId || "",
+          header: c.customId?.value || "",
           description: c.description || "",
           priority: c.priority || "normal",
           tags: c.tags || [],
           color: c.color || "#00ff41",
-          typeId: c.typeId,
-          typeName:
-            cardTypes.find((t) => t.id === c.typeId)?.name || "Unknown",
-          typeColor:
-            cardTypes.find((t) => t.id === c.typeId)?.cardColor || "#333",
-          isBlocked: c.isBlocked || false,
-          blockReason: c.blockReason || "",
+          typeName: c.cardType?.name || "Unknown",
+          isBlocked: c.blockedStatus?.isBlocked || false,
+          blockReason: c.blockedStatus?.reason || "",
         }));
 
       return {
