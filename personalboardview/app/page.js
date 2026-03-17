@@ -419,7 +419,7 @@ function DetailPanel({ card, onClose }) {
 }
 
 // ─── Status Bar ─────────────────────────────────────
-function StatusBar({ totalCards, fetchedAt, error, loading }) {
+function StatusBar({ totalCards, fetchedAt, error, loading, pollInterval, onPollChange }) {
   const [time, setTime] = useState("");
 
   useEffect(() => {
@@ -467,9 +467,24 @@ function StatusBar({ totalCards, fetchedAt, error, loading }) {
         </span>
         <span>{totalCards} cards</span>
       </div>
-      <div style={{ display: "flex", gap: 16 }}>
-        <span>{time}</span>
-        <span>openclaw v0.1</span>
+      <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+        <span>POLL:</span>
+        {[{ label: "30s", val: 30000 }, { label: "5m", val: 300000 }].map(({ label, val }) => (
+          <span
+            key={val}
+            onClick={() => onPollChange(val)}
+            style={{
+              cursor: "pointer",
+              color: pollInterval === val ? C.green : C.darkest,
+              border: `1px solid ${pollInterval === val ? C.green : C.border}`,
+              padding: "1px 6px",
+              transition: "all 0.15s",
+            }}
+          >
+            {label}
+          </span>
+        ))}
+        <span style={{ marginLeft: 8 }}>{time}</span>
       </div>
     </div>
   );
@@ -525,6 +540,7 @@ export default function Home() {
   const [selected, setSelected] = useState(null);
   const [opacity, setOpacity] = useState(0);
   const [view, setView] = useState("board");
+  const [pollInterval, setPollInterval] = useState(300000); // default 5min
 
   const fetchBoard = useCallback(async () => {
     setLoading(true);
@@ -550,12 +566,12 @@ export default function Home() {
     }
   }, [booted, fetchBoard]);
 
-  // Auto-refresh every 30s
+  // Auto-refresh
   useEffect(() => {
     if (!booted) return;
-    const i = setInterval(fetchBoard, 30000);
+    const i = setInterval(fetchBoard, pollInterval);
     return () => clearInterval(i);
-  }, [booted, fetchBoard]);
+  }, [booted, fetchBoard, pollInterval]);
 
   // ESC to deselect
   useEffect(() => {
@@ -703,6 +719,8 @@ export default function Home() {
         fetchedAt={data?.fetchedAt}
         error={error}
         loading={loading}
+        pollInterval={pollInterval}
+        onPollChange={setPollInterval}
       />
     </div>
   );
