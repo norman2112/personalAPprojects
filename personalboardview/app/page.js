@@ -261,6 +261,7 @@ function Column({ lane, selectedId, onSelect }) {
 function DetailPanel({ card, onClose }) {
   const [comments, setComments] = useState([]);
   const [loadingComments, setLoadingComments] = useState(false);
+  const [description, setDescription] = useState("");
   const [newComment, setNewComment] = useState("");
   const [posting, setPosting] = useState(false);
   const bottomRef = useRef(null);
@@ -268,10 +269,16 @@ function DetailPanel({ card, onClose }) {
   useEffect(() => {
     if (!card) return;
     setComments([]);
+    setDescription("");
     setLoadingComments(true);
-    fetch(`/api/comments?cardId=${card.id}`)
-      .then((r) => r.json())
-      .then((d) => setComments(d.comments || []))
+    Promise.all([
+      fetch(`/api/comments?cardId=${card.id}`).then((r) => r.json()),
+      fetch(`/api/card?cardId=${card.id}`).then((r) => r.json()),
+    ])
+      .then(([commentsData, cardData]) => {
+        setComments(commentsData.comments || []);
+        setDescription(cardData.description || "");
+      })
       .catch(() => {})
       .finally(() => setLoadingComments(false));
   }, [card?.id]);
@@ -327,10 +334,11 @@ function DetailPanel({ card, onClose }) {
             {card.isBlocked && <span style={{ color: C.red, fontSize: 10 }}>■ BLOCKED</span>}
           </div>
           <div style={{ color: C.green, fontWeight: 700, lineHeight: 1.4 }}>{card.title}</div>
-          {card.description && (
-            <div style={{ color: C.dim, marginTop: 6, lineHeight: 1.5, fontSize: 11 }}>
-              {card.description}
-            </div>
+          {description && (
+            <div
+              style={{ color: C.dim, marginTop: 6, lineHeight: 1.5, fontSize: 11 }}
+              dangerouslySetInnerHTML={{ __html: description }}
+            />
           )}
           {card.blockReason && (
             <div style={{ color: C.red, marginTop: 4, fontSize: 11 }}>reason: {card.blockReason}</div>
