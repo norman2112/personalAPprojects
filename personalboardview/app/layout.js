@@ -1,6 +1,6 @@
 // app/layout.js
 export const metadata = {
-  title: "OPENCLAW // board",
+  title: "BIG FELLAS BOARD",
   description: "CLI-style personal kanban powered by AgilePlace",
 };
 
