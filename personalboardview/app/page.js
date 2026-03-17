@@ -172,8 +172,158 @@ function Card({ card, selected, onClick }) {
   );
 }
 
+// ─── New Card Panel ──────────────────────────────────
+function NewCardPanel({ laneId, onClose, onCreated }) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [comment, setComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const submit = async () => {
+    if (!title.trim() || submitting) return;
+    setSubmitting(true);
+    setError("");
+    try {
+      const res = await fetch("/api/card", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: title.trim(), description: description.trim(), comment, laneId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to create card");
+      onCreated();
+      onClose();
+    } catch (e) {
+      setError(e.message);
+    }
+    setSubmitting(false);
+  };
+
+  return (
+    <div
+      style={{
+        width: 360,
+        borderLeft: `1px solid ${C.border}`,
+        display: "flex",
+        flexDirection: "column",
+        background: "#050505",
+        fontFamily: FONT,
+        fontSize: 12,
+        flexShrink: 0,
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          borderBottom: `1px solid ${C.border}`,
+          padding: "10px 14px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <span style={{ color: C.green, fontWeight: 700, letterSpacing: 1 }}>+ NEW IDEA</span>
+        <div
+          onClick={onClose}
+          style={{ color: C.darkest, cursor: "pointer", fontSize: 10, padding: "4px 8px", border: `1px solid ${C.border}` }}
+        >
+          [ESC]
+        </div>
+      </div>
+
+      {/* Form */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "14px" }}>
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ color: C.darkest, fontSize: 10, letterSpacing: 1, marginBottom: 6 }}>TITLE *</div>
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
+            placeholder="Card title..."
+            style={{
+              width: "100%",
+              background: "#0d0d0d",
+              border: `1px solid ${title ? C.green : C.border}`,
+              color: C.text,
+              fontFamily: FONT,
+              fontSize: 16,
+              padding: "8px",
+              outline: "none",
+              boxSizing: "border-box",
+            }}
+          />
+        </div>
+
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ color: C.darkest, fontSize: 10, letterSpacing: 1, marginBottom: 6 }}>DESCRIPTION</div>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="What's the idea?"
+            rows={4}
+            style={{
+              width: "100%",
+              background: "#0d0d0d",
+              border: `1px solid ${C.border}`,
+              color: C.text,
+              fontFamily: FONT,
+              fontSize: 16,
+              padding: "8px",
+              resize: "none",
+              outline: "none",
+              boxSizing: "border-box",
+            }}
+          />
+        </div>
+
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ color: C.darkest, fontSize: 10, letterSpacing: 1, marginBottom: 6 }}>COMMENT</div>
+          <textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="Add an initial comment..."
+            rows={3}
+            style={{
+              width: "100%",
+              background: "#0d0d0d",
+              border: `1px solid ${C.border}`,
+              color: C.text,
+              fontFamily: FONT,
+              fontSize: 16,
+              padding: "8px",
+              resize: "none",
+              outline: "none",
+              boxSizing: "border-box",
+            }}
+          />
+        </div>
+
+        {error && <div style={{ color: C.red, fontSize: 11, marginBottom: 10 }}>■ {error}</div>}
+      </div>
+
+      {/* Submit */}
+      <div style={{ borderTop: `1px solid ${C.border}`, padding: "10px 14px", display: "flex", justifyContent: "flex-end" }}>
+        <span
+          onClick={submit}
+          style={{
+            color: submitting || !title.trim() ? C.darkest : C.green,
+            fontSize: 11,
+            cursor: submitting || !title.trim() ? "default" : "pointer",
+            padding: "8px 16px",
+            border: `1px solid ${submitting || !title.trim() ? C.border : C.green}`,
+            transition: "all 0.15s",
+          }}
+        >
+          {submitting ? "CREATING..." : "CREATE CARD"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 // ─── Column ─────────────────────────────────────────
-function Column({ lane, selectedId, onSelect }) {
+function Column({ lane, selectedId, onSelect, onNewIdea }) {
   const isHold = lane.name === "ON_HOLD";
   const isDone = lane.name === "DONE";
   const headerColor = isHold ? C.orange : isDone ? C.dim : C.green;
@@ -250,6 +400,27 @@ function Column({ lane, selectedId, onSelect }) {
             }}
           >
             — empty —
+          </div>
+        )}
+        {lane.name === "IDEAS" && (
+          <div
+            onClick={onNewIdea}
+            style={{
+              marginTop: 6,
+              padding: "8px",
+              textAlign: "center",
+              color: C.darkest,
+              fontSize: 10,
+              fontFamily: FONT,
+              border: `1px dashed ${C.border}`,
+              cursor: "pointer",
+              letterSpacing: 1,
+              transition: "all 0.15s",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = C.green; e.currentTarget.style.borderColor = C.green; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = C.darkest; e.currentTarget.style.borderColor = C.border; }}
+          >
+            + NEW IDEA
           </div>
         )}
       </div>
@@ -500,7 +671,7 @@ function StatusBar({ totalCards, fetchedAt, error, loading, pollInterval, onPoll
 }
 
 // ─── List View ──────────────────────────────────────
-function ListView({ lanes, selectedId, onSelect }) {
+function ListView({ lanes, selectedId, onSelect, onNewIdea }) {
   return (
     <div style={{ flex: 1, overflowY: "auto", padding: "16px 24px" }}>
       {lanes.map((lane) => {
@@ -526,12 +697,32 @@ function ListView({ lanes, selectedId, onSelect }) {
                 {lane.count}
               </span>
             </div>
-            {lane.cards.length === 0 ? (
+            {lane.cards.length === 0 && (
               <div style={{ color: C.darkest, fontSize: 11, fontFamily: FONT, padding: "8px 0" }}>— empty —</div>
-            ) : (
-              lane.cards.map((c) => (
-                <Card key={c.id} card={c} selected={selectedId === c.id} onClick={() => onSelect(c)} />
-              ))
+            )}
+            {lane.cards.map((c) => (
+              <Card key={c.id} card={c} selected={selectedId === c.id} onClick={() => onSelect(c)} />
+            ))}
+            {lane.name === "IDEAS" && (
+              <div
+                onClick={onNewIdea}
+                style={{
+                  marginTop: 6,
+                  padding: "8px",
+                  textAlign: "center",
+                  color: C.darkest,
+                  fontSize: 10,
+                  fontFamily: FONT,
+                  border: `1px dashed ${C.border}`,
+                  cursor: "pointer",
+                  letterSpacing: 1,
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = C.green; e.currentTarget.style.borderColor = C.green; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = C.darkest; e.currentTarget.style.borderColor = C.border; }}
+              >
+                + NEW IDEA
+              </div>
             )}
           </div>
         );
@@ -550,6 +741,12 @@ export default function Home() {
   const [opacity, setOpacity] = useState(0);
   const [view, setView] = useState("board");
   const [pollInterval, setPollInterval] = useState(300000); // default 5min
+  const [showNewCard, setShowNewCard] = useState(false);
+
+  const IDEAS_LANE_ID = "2431674921";
+
+  const openNewCard = () => { setSelected(null); setShowNewCard(true); };
+  const closeNewCard = () => setShowNewCard(false);
 
   const fetchBoard = useCallback(async () => {
     setLoading(true);
@@ -585,7 +782,7 @@ export default function Home() {
   // ESC to deselect
   useEffect(() => {
     const handler = (e) => {
-      if (e.key === "Escape") setSelected(null);
+      if (e.key === "Escape") { setSelected(null); setShowNewCard(false); }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -691,7 +888,8 @@ export default function Home() {
                 key={lane.id}
                 lane={lane}
                 selectedId={selected?.id}
-                onSelect={setSelected}
+                onSelect={(c) => { setShowNewCard(false); setSelected(c); }}
+                onNewIdea={openNewCard}
               />
             ))}
             {!data && !error && (
@@ -714,12 +912,21 @@ export default function Home() {
           <ListView
             lanes={data?.lanes || []}
             selectedId={selected?.id}
-            onSelect={setSelected}
+            onSelect={(c) => { setShowNewCard(false); setSelected(c); }}
+            onNewIdea={openNewCard}
           />
         )}
 
-        {/* Detail + comments side panel */}
-        <DetailPanel card={selected} onClose={() => setSelected(null)} />
+        {/* Side panel */}
+        {showNewCard ? (
+          <NewCardPanel
+            laneId={IDEAS_LANE_ID}
+            onClose={closeNewCard}
+            onCreated={fetchBoard}
+          />
+        ) : (
+          <DetailPanel card={selected} onClose={() => setSelected(null)} />
+        )}
       </div>
 
       {/* Status bar */}
