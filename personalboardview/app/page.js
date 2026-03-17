@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 // ─── Theme ──────────────────────────────────────────
 const C = {
@@ -257,56 +257,162 @@ function Column({ lane, selectedId, onSelect }) {
   );
 }
 
-// ─── Detail Panel ───────────────────────────────────
+// ─── Card Detail + Comments Panel ───────────────────
 function DetailPanel({ card, onClose }) {
+  const [comments, setComments] = useState([]);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [newComment, setNewComment] = useState("");
+  const [posting, setPosting] = useState(false);
+  const bottomRef = useRef(null);
+
+  useEffect(() => {
+    if (!card) return;
+    setComments([]);
+    setLoadingComments(true);
+    fetch(`/api/comments?cardId=${card.id}`)
+      .then((r) => r.json())
+      .then((d) => setComments(d.comments || []))
+      .catch(() => {})
+      .finally(() => setLoadingComments(false));
+  }, [card?.id]);
+
+  const submitComment = async () => {
+    if (!newComment.trim() || posting) return;
+    setPosting(true);
+    try {
+      const res = await fetch(`/api/comments?cardId=${card.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: newComment.trim() }),
+      });
+      const created = await res.json();
+      setComments((prev) => [created, ...prev]);
+      setNewComment("");
+    } catch {}
+    setPosting(false);
+  };
+
   if (!card) return null;
   const hColor = headerColor(card.header || card.typeName || "");
 
   return (
     <div
       style={{
-        borderTop: `1px solid ${C.border}`,
-        padding: "12px 16px",
+        width: 360,
+        borderLeft: `1px solid ${C.border}`,
+        display: "flex",
+        flexDirection: "column",
+        background: "#050505",
         fontFamily: FONT,
         fontSize: 12,
-        background: "#050505",
-        display: "flex",
-        gap: 24,
-        alignItems: "flex-start",
+        flexShrink: 0,
       }}
     >
-      <div style={{ flex: 1 }}>
-        <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 6 }}>
-          <span style={{ color: hColor, fontSize: 10, letterSpacing: 1 }}>
-            [{(card.header || card.typeName || "").toUpperCase()}]
-          </span>
-          <span style={{ color: C.green, fontWeight: 700 }}>{card.title}</span>
-          {card.isBlocked && (
-            <span style={{ color: C.red, fontSize: 10 }}>■ BLOCKED</span>
-          )}
-        </div>
-        {card.description && (
-          <div style={{ color: C.dim, lineHeight: 1.5, maxWidth: 600 }}>
-            {card.description}
-          </div>
-        )}
-        {card.blockReason && (
-          <div style={{ color: C.red, marginTop: 4, fontSize: 11 }}>
-            reason: {card.blockReason}
-          </div>
-        )}
-      </div>
+      {/* Panel header */}
       <div
-        onClick={onClose}
         style={{
-          color: C.darkest,
-          cursor: "pointer",
-          fontSize: 10,
-          padding: "4px 8px",
-          border: `1px solid ${C.border}`,
+          borderBottom: `1px solid ${C.border}`,
+          padding: "10px 14px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          gap: 8,
         }}
       >
-        [ESC]
+        <div style={{ flex: 1 }}>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
+            <span style={{ color: hColor, fontSize: 10, letterSpacing: 1 }}>
+              [{(card.header || card.typeName || "").toUpperCase()}]
+            </span>
+            {card.isBlocked && <span style={{ color: C.red, fontSize: 10 }}>■ BLOCKED</span>}
+          </div>
+          <div style={{ color: C.green, fontWeight: 700, lineHeight: 1.4 }}>{card.title}</div>
+          {card.description && (
+            <div style={{ color: C.dim, marginTop: 6, lineHeight: 1.5, fontSize: 11 }}>
+              {card.description}
+            </div>
+          )}
+          {card.blockReason && (
+            <div style={{ color: C.red, marginTop: 4, fontSize: 11 }}>reason: {card.blockReason}</div>
+          )}
+        </div>
+        <div
+          onClick={onClose}
+          style={{ color: C.darkest, cursor: "pointer", fontSize: 10, padding: "4px 8px", border: `1px solid ${C.border}`, flexShrink: 0 }}
+        >
+          [ESC]
+        </div>
+      </div>
+
+      {/* Comments list */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "10px 14px" }}>
+        <div style={{ color: C.darkest, fontSize: 10, letterSpacing: 1, marginBottom: 8 }}>
+          COMMENTS {!loadingComments && `(${comments.length})`}
+        </div>
+        {loadingComments && <div style={{ color: C.dim, fontSize: 11 }}>loading...</div>}
+        {!loadingComments && comments.length === 0 && (
+          <div style={{ color: C.darkest, fontSize: 11 }}>— no comments yet —</div>
+        )}
+        {comments.map((c) => (
+          <div
+            key={c.id}
+            style={{
+              borderLeft: `2px solid ${C.border}`,
+              paddingLeft: 10,
+              marginBottom: 14,
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+              <span style={{ color: C.cyan, fontSize: 10 }}>{c.createdBy?.fullName || "unknown"}</span>
+              <span style={{ color: C.darkest, fontSize: 10 }}>
+                {new Date(c.createdOn).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+              </span>
+            </div>
+            <div
+              style={{ color: C.text, fontSize: 11, lineHeight: 1.5 }}
+              dangerouslySetInnerHTML={{ __html: c.text }}
+            />
+          </div>
+        ))}
+        <div ref={bottomRef} />
+      </div>
+
+      {/* New comment input */}
+      <div style={{ borderTop: `1px solid ${C.border}`, padding: "10px 14px" }}>
+        <textarea
+          value={newComment}
+          onChange={(e) => setNewComment(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submitComment(); }}
+          placeholder="Add a comment... (⌘Enter to submit)"
+          rows={3}
+          style={{
+            width: "100%",
+            background: "#0d0d0d",
+            border: `1px solid ${C.border}`,
+            color: C.text,
+            fontFamily: FONT,
+            fontSize: 11,
+            padding: "8px",
+            resize: "none",
+            outline: "none",
+            boxSizing: "border-box",
+          }}
+        />
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 6 }}>
+          <span
+            onClick={submitComment}
+            style={{
+              color: posting ? C.dim : C.green,
+              fontSize: 10,
+              cursor: posting ? "default" : "pointer",
+              padding: "4px 10px",
+              border: `1px solid ${posting ? C.border : C.green}`,
+              transition: "all 0.15s",
+            }}
+          >
+            {posting ? "POSTING..." : "POST"}
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -550,43 +656,46 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Board / List */}
-      {view === "board" ? (
-        <div style={{ flex: 1, display: "flex", overflow: "auto" }}>
-          {data?.lanes?.map((lane) => (
-            <Column
-              key={lane.id}
-              lane={lane}
-              selectedId={selected?.id}
-              onSelect={setSelected}
-            />
-          ))}
-          {!data && !error && (
-            <div
-              style={{
-                flex: 1,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontFamily: FONT,
-                color: C.dim,
-                fontSize: 12,
-              }}
-            >
-              loading board...
-            </div>
-          )}
-        </div>
-      ) : (
-        <ListView
-          lanes={data?.lanes || []}
-          selectedId={selected?.id}
-          onSelect={setSelected}
-        />
-      )}
+      {/* Main content + detail panel */}
+      <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+        {/* Board / List */}
+        {view === "board" ? (
+          <div style={{ flex: 1, display: "flex", overflow: "auto" }}>
+            {data?.lanes?.map((lane) => (
+              <Column
+                key={lane.id}
+                lane={lane}
+                selectedId={selected?.id}
+                onSelect={setSelected}
+              />
+            ))}
+            {!data && !error && (
+              <div
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontFamily: FONT,
+                  color: C.dim,
+                  fontSize: 12,
+                }}
+              >
+                loading board...
+              </div>
+            )}
+          </div>
+        ) : (
+          <ListView
+            lanes={data?.lanes || []}
+            selectedId={selected?.id}
+            onSelect={setSelected}
+          />
+        )}
 
-      {/* Detail panel */}
-      <DetailPanel card={selected} onClose={() => setSelected(null)} />
+        {/* Detail + comments side panel */}
+        <DetailPanel card={selected} onClose={() => setSelected(null)} />
+      </div>
 
       {/* Status bar */}
       <StatusBar
