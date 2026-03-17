@@ -449,7 +449,7 @@ export default function Home() {
               letterSpacing: 3,
             }}
           >
-            OPENCLAW
+            BIG FELLAS BOARD
           </span>
           <span style={{ color: C.darkest, fontSize: 11 }}>
             // my projects
@@ -468,9 +468,6 @@ export default function Home() {
             }}
           >
             {loading ? "↻ SYNCING..." : "↻ REFRESH"}
-          </span>
-          <span style={{ color: C.darkest, fontSize: 10 }}>
-            ■ AGILEPLACE MCP
           </span>
         </div>
       </div>
