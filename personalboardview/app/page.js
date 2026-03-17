@@ -386,41 +386,42 @@ function DetailPanel({ card, onClose }) {
       </div>
 
       {/* New comment input */}
-      <div style={{ borderTop: `1px solid ${C.border}`, padding: "10px 14px" }}>
+      <div style={{ borderTop: `1px solid ${C.border}`, padding: "10px 14px", display: "flex", gap: 8, alignItems: "flex-end" }}>
         <textarea
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submitComment(); }}
-          placeholder="Add a comment... (⌘Enter to submit)"
-          rows={3}
+          placeholder="Add a comment..."
+          rows={2}
           style={{
-            width: "100%",
+            flex: 1,
             background: "#0d0d0d",
             border: `1px solid ${C.border}`,
             color: C.text,
             fontFamily: FONT,
-            fontSize: 11,
+            fontSize: 16,
             padding: "8px",
             resize: "none",
             outline: "none",
             boxSizing: "border-box",
+            WebkitTextSizeAdjust: "100%",
           }}
         />
-        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 6 }}>
-          <span
-            onClick={submitComment}
-            style={{
-              color: posting ? C.dim : C.green,
-              fontSize: 10,
-              cursor: posting ? "default" : "pointer",
-              padding: "4px 10px",
-              border: `1px solid ${posting ? C.border : C.green}`,
-              transition: "all 0.15s",
-            }}
-          >
-            {posting ? "POSTING..." : "POST"}
-          </span>
-        </div>
+        <span
+          onClick={submitComment}
+          style={{
+            color: posting ? C.dim : C.green,
+            fontSize: 11,
+            cursor: posting ? "default" : "pointer",
+            padding: "8px 10px",
+            border: `1px solid ${posting ? C.border : C.green}`,
+            transition: "all 0.15s",
+            whiteSpace: "nowrap",
+            flexShrink: 0,
+          }}
+        >
+          {posting ? "..." : "POST"}
+        </span>
       </div>
     </div>
   );
