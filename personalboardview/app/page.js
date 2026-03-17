@@ -115,10 +115,16 @@ function Card({ card, selected, onClick }) {
         borderLeft: `3px solid ${hColor}`,
       }}
       onMouseEnter={(e) => {
-        if (!selected) e.currentTarget.style.borderColor = C.dark;
+        if (!selected) {
+          e.currentTarget.style.borderColor = C.dark;
+          e.currentTarget.style.borderLeftColor = hColor;
+        }
       }}
       onMouseLeave={(e) => {
-        if (!selected) e.currentTarget.style.borderColor = C.border;
+        if (!selected) {
+          e.currentTarget.style.borderColor = C.border;
+          e.currentTarget.style.borderLeftColor = hColor;
+        }
       }}
     >
       <div
