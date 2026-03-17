@@ -363,6 +363,47 @@ function StatusBar({ totalCards, fetchedAt, error, loading }) {
   );
 }
 
+// ─── List View ──────────────────────────────────────
+function ListView({ lanes, selectedId, onSelect }) {
+  return (
+    <div style={{ flex: 1, overflowY: "auto", padding: "16px 24px" }}>
+      {lanes.map((lane) => {
+        const isHold = lane.name === "ON_HOLD";
+        const isDone = lane.name === "DONE";
+        const hColor = isHold ? C.orange : isDone ? C.dim : C.green;
+        return (
+          <div key={lane.id} style={{ marginBottom: 32 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                marginBottom: 8,
+                paddingBottom: 6,
+                borderBottom: `1px solid ${C.border}`,
+              }}
+            >
+              <span style={{ color: hColor, fontSize: 11, fontFamily: FONT, fontWeight: 700, letterSpacing: 1.5 }}>
+                {lane.name.replace(/_/g, " ")}
+              </span>
+              <span style={{ color: C.darkest, fontSize: 10, fontFamily: FONT }}>
+                {lane.count}
+              </span>
+            </div>
+            {lane.cards.length === 0 ? (
+              <div style={{ color: C.darkest, fontSize: 11, fontFamily: FONT, padding: "8px 0" }}>— empty —</div>
+            ) : (
+              lane.cards.map((c) => (
+                <Card key={c.id} card={c} selected={selectedId === c.id} onClick={() => onSelect(c)} />
+              ))
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Main ───────────────────────────────────────────
 export default function Home() {
   const [booted, setBooted] = useState(false);
@@ -371,6 +412,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState(null);
   const [opacity, setOpacity] = useState(0);
+  const [view, setView] = useState("board");
 
   const fetchBoard = useCallback(async () => {
     setLoading(true);
@@ -455,7 +497,35 @@ export default function Home() {
             // my projects
           </span>
         </div>
-        <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <span
+            onClick={() => setView("board")}
+            style={{
+              color: view === "board" ? C.green : C.darkest,
+              fontSize: 10,
+              cursor: "pointer",
+              padding: "4px 8px",
+              border: `1px solid ${view === "board" ? C.green : C.border}`,
+              fontFamily: FONT,
+              transition: "all 0.15s",
+            }}
+          >
+            BOARD
+          </span>
+          <span
+            onClick={() => setView("list")}
+            style={{
+              color: view === "list" ? C.green : C.darkest,
+              fontSize: 10,
+              cursor: "pointer",
+              padding: "4px 8px",
+              border: `1px solid ${view === "list" ? C.green : C.border}`,
+              fontFamily: FONT,
+              transition: "all 0.15s",
+            }}
+          >
+            LIST
+          </span>
           <span
             onClick={fetchBoard}
             style={{
@@ -464,7 +534,9 @@ export default function Home() {
               cursor: "pointer",
               padding: "4px 8px",
               border: `1px solid ${C.border}`,
+              fontFamily: FONT,
               transition: "color 0.2s",
+              marginLeft: 8,
             }}
           >
             {loading ? "↻ SYNCING..." : "↻ REFRESH"}
@@ -472,38 +544,40 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Board */}
-      <div
-        style={{
-          flex: 1,
-          display: "flex",
-          overflow: "auto",
-        }}
-      >
-        {data?.lanes?.map((lane) => (
-          <Column
-            key={lane.id}
-            lane={lane}
-            selectedId={selected?.id}
-            onSelect={setSelected}
-          />
-        ))}
-        {!data && !error && (
-          <div
-            style={{
-              flex: 1,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontFamily: FONT,
-              color: C.dim,
-              fontSize: 12,
-            }}
-          >
-            loading board...
-          </div>
-        )}
-      </div>
+      {/* Board / List */}
+      {view === "board" ? (
+        <div style={{ flex: 1, display: "flex", overflow: "auto" }}>
+          {data?.lanes?.map((lane) => (
+            <Column
+              key={lane.id}
+              lane={lane}
+              selectedId={selected?.id}
+              onSelect={setSelected}
+            />
+          ))}
+          {!data && !error && (
+            <div
+              style={{
+                flex: 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontFamily: FONT,
+                color: C.dim,
+                fontSize: 12,
+              }}
+            >
+              loading board...
+            </div>
+          )}
+        </div>
+      ) : (
+        <ListView
+          lanes={data?.lanes || []}
+          selectedId={selected?.id}
+          onSelect={setSelected}
+        />
+      )}
 
       {/* Detail panel */}
       <DetailPanel card={selected} onClose={() => setSelected(null)} />
