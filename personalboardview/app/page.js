@@ -499,8 +499,8 @@ function DetailPanel({ card, onClose }) {
             {card.isBlocked && <span style={{ color: C.red, fontSize: 10 }}>■ BLOCKED</span>}
           </div>
           <div style={{ color: C.green, fontWeight: 700, lineHeight: 1.4, display: "flex", alignItems: "baseline", gap: 6 }}>
+            <span style={{ flex: 1 }}>{card.title}</span>
             {customIconGlyph(card.icon) && <span style={{ fontSize: 15, flexShrink: 0 }}>{customIconGlyph(card.icon)}</span>}
-            {card.title}
           </div>
           {description && (
             <div
