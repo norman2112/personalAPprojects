@@ -74,7 +74,7 @@ export async function GET() {
           typeName: c.cardType?.name || "Unknown",
           isBlocked: c.blockedStatus?.isBlocked || false,
           blockReason: c.blockedStatus?.reason || "",
-          icon: c.icon || "",
+          icon: c.customIcon?.iconName || "",
         }));
 
       return {

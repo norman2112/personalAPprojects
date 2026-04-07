@@ -36,6 +36,20 @@ function headerColor(header) {
   return C[key] || C.green;
 }
 
+const ICON_MAP = {
+  "thumb-up": "👍", "thumb-down": "👎", "star": "★", "heart": "♥",
+  "flag": "⚑", "fire": "🔥", "lightning": "⚡", "bug": "🐛",
+  "check": "✓", "warning": "⚠", "info": "ℹ", "question": "?",
+  "clock": "⏱", "lock": "🔒", "key": "🔑", "gear": "⚙",
+  "rocket": "🚀", "target": "◎", "idea": "💡", "money": "💰",
+  "user": "◈", "group": "◈◈", "document": "▤", "link": "⛓",
+};
+
+function customIconGlyph(name) {
+  if (!name) return null;
+  return ICON_MAP[name] || null;
+}
+
 function priorityIcon(p) {
   if (p === "critical") return { icon: "▲▲", color: C.red };
   if (p === "high") return { icon: "▲", color: C.red };
@@ -126,8 +140,8 @@ function Card({ card, selected, onClick }) {
           gap: 6,
         }}
       >
-        {card.icon && (
-          <span style={{ fontSize: 13, flexShrink: 0 }}>{card.icon}</span>
+        {customIconGlyph(card.icon) && (
+          <span style={{ fontSize: 13, flexShrink: 0 }}>{customIconGlyph(card.icon)}</span>
         )}
         {card.title}
       </div>
@@ -485,7 +499,7 @@ function DetailPanel({ card, onClose }) {
             {card.isBlocked && <span style={{ color: C.red, fontSize: 10 }}>■ BLOCKED</span>}
           </div>
           <div style={{ color: C.green, fontWeight: 700, lineHeight: 1.4, display: "flex", alignItems: "baseline", gap: 6 }}>
-            {card.icon && <span style={{ fontSize: 15, flexShrink: 0 }}>{card.icon}</span>}
+            {customIconGlyph(card.icon) && <span style={{ fontSize: 15, flexShrink: 0 }}>{customIconGlyph(card.icon)}</span>}
             {card.title}
           </div>
           {description && (
