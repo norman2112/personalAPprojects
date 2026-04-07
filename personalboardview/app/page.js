@@ -140,10 +140,10 @@ function Card({ card, selected, onClick }) {
           gap: 6,
         }}
       >
+        <span style={{ flex: 1 }}>{card.title}</span>
         {customIconGlyph(card.icon) && (
-          <span style={{ fontSize: 13, flexShrink: 0 }}>{customIconGlyph(card.icon)}</span>
+          <span style={{ fontSize: 13, flexShrink: 0, marginLeft: 6 }}>{customIconGlyph(card.icon)}</span>
         )}
-        {card.title}
       </div>
       {card.tags && card.tags.length > 0 && (
         <div style={{ marginTop: 4 }}>
