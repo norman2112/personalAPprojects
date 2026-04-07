@@ -20,6 +20,7 @@ export async function GET(request) {
   });
   if (!res.ok) return Response.json({ error: `AgilePlace ${res.status}` }, { status: res.status });
   const data = await res.json();
+  if (searchParams.get("debug") === "1") return Response.json(data);
   return Response.json({ description: data.description || "" });
 }
 
