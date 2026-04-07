@@ -147,8 +147,14 @@ function Card({ card, selected, onClick }) {
           color: selected ? C.green : C.text,
           fontSize: 12,
           lineHeight: 1.4,
+          display: "flex",
+          alignItems: "baseline",
+          gap: 6,
         }}
       >
+        {card.icon && (
+          <span style={{ fontSize: 13, flexShrink: 0 }}>{card.icon}</span>
+        )}
         {card.title}
       </div>
       {card.tags && card.tags.length > 0 && (
@@ -504,7 +510,10 @@ function DetailPanel({ card, onClose }) {
             </span>
             {card.isBlocked && <span style={{ color: C.red, fontSize: 10 }}>■ BLOCKED</span>}
           </div>
-          <div style={{ color: C.green, fontWeight: 700, lineHeight: 1.4 }}>{card.title}</div>
+          <div style={{ color: C.green, fontWeight: 700, lineHeight: 1.4, display: "flex", alignItems: "baseline", gap: 6 }}>
+            {card.icon && <span style={{ fontSize: 15, flexShrink: 0 }}>{card.icon}</span>}
+            {card.title}
+          </div>
           {description && (
             <div
               style={{ color: C.dim, marginTop: 6, lineHeight: 1.5, fontSize: 11 }}
