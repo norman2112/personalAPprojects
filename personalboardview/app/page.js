@@ -45,31 +45,10 @@ function priorityIcon(p) {
 
 // ─── Boot Sequence ──────────────────────────────────
 function BootSequence({ onDone }) {
-  const lines = [
-    { text: "$ openclaw --board personal --render kanban", color: C.green },
-    { text: "initializing openclaw v0.1...", color: C.dim },
-    { text: "connecting to agileplace mcp...", color: C.dim },
-    { text: "authenticated ✓", color: C.green },
-    { text: "fetching board data...", color: C.dim },
-  ];
-  const [shown, setShown] = useState(0);
-  const [blink, setBlink] = useState(true);
-
   useEffect(() => {
-    const b = setInterval(() => setBlink((v) => !v), 530);
-    return () => clearInterval(b);
-  }, []);
-
-  useEffect(() => {
-    if (shown < lines.length) {
-      const delay = shown === 0 ? 600 : 150 + Math.random() * 250;
-      const t = setTimeout(() => setShown((s) => s + 1), delay);
-      return () => clearTimeout(t);
-    } else {
-      const t = setTimeout(onDone, 500);
-      return () => clearTimeout(t);
-    }
-  }, [shown, onDone]);
+    const t = setTimeout(onDone, 600);
+    return () => clearTimeout(t);
+  }, [onDone]);
 
   return (
     <div
@@ -83,14 +62,9 @@ function BootSequence({ onDone }) {
         zIndex: 100,
       }}
     >
-      <div style={{ fontFamily: FONT, fontSize: 13, lineHeight: 1.8 }}>
-        {lines.slice(0, shown).map((l, i) => (
-          <div key={i} style={{ color: l.color }}>
-            {l.text}
-          </div>
-        ))}
-        <span style={{ color: C.green, opacity: blink ? 1 : 0 }}>█</span>
-      </div>
+      <span style={{ fontFamily: FONT, fontSize: 12, color: C.dim, letterSpacing: 2 }}>
+        BIG FELLAS BOARD
+      </span>
     </div>
   );
 }
@@ -772,14 +746,15 @@ export default function Home() {
     }
   }, []);
 
-  // Initial fetch after boot
+  // Fetch immediately on mount — runs in parallel with boot animation
   useEffect(() => {
-    if (booted) {
-      fetchBoard().then(() => {
-        setTimeout(() => setOpacity(1), 50);
-      });
-    }
-  }, [booted, fetchBoard]);
+    fetchBoard();
+  }, [fetchBoard]);
+
+  // Fade in once booted
+  useEffect(() => {
+    if (booted) setTimeout(() => setOpacity(1), 50);
+  }, [booted]);
 
   // Auto-refresh
   useEffect(() => {
