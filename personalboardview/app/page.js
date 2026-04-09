@@ -422,13 +422,17 @@ function Column({ lane, selectedId, onSelect, onNewIdea }) {
   );
 }
 
+const LANE_IDEAS = "2431674921";
+const LANE_DONE = "2431674919";
+
 // ─── Card Detail + Comments Panel ───────────────────
-function DetailPanel({ card, onClose }) {
+function DetailPanel({ card, onClose, onBoardRefresh }) {
   const [comments, setComments] = useState([]);
   const [loadingComments, setLoadingComments] = useState(false);
   const [description, setDescription] = useState("");
   const [newComment, setNewComment] = useState("");
   const [posting, setPosting] = useState(false);
+  const [moving, setMoving] = useState(null);
   const bottomRef = useRef(null);
 
   useEffect(() => {
@@ -462,6 +466,22 @@ function DetailPanel({ card, onClose }) {
       setNewComment("");
     } catch {}
     setPosting(false);
+  };
+
+  const moveCard = async (laneId, key) => {
+    if (!card?.id || moving) return;
+    setMoving(key);
+    try {
+      const res = await fetch("/api/board/move", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cardId: card.id, laneId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Move failed");
+      onBoardRefresh?.();
+    } catch {}
+    setMoving(null);
   };
 
   if (!card) return null;
@@ -589,6 +609,49 @@ function DetailPanel({ card, onClose }) {
           }}
         >
           {posting ? "..." : "POST"}
+        </span>
+      </div>
+
+      <div
+        style={{
+          borderTop: `1px solid ${C.border}`,
+          padding: "10px 14px",
+          display: "flex",
+          gap: 8,
+          flexWrap: "wrap",
+        }}
+      >
+        <span
+          onClick={() => moveCard(LANE_IDEAS, "ideas")}
+          style={{
+            color: moving === "ideas" ? C.dim : "#ffaa00",
+            fontSize: 11,
+            fontFamily: FONT,
+            cursor: moving ? "default" : "pointer",
+            padding: "8px 10px",
+            border: `1px solid ${moving === "ideas" ? C.border : "#ffaa00"}`,
+            background: "transparent",
+            transition: "all 0.15s",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {moving === "ideas" ? "..." : "← BACK TO IDEAS"}
+        </span>
+        <span
+          onClick={() => moveCard(LANE_DONE, "done")}
+          style={{
+            color: moving === "done" ? C.dim : "#00ff41",
+            fontSize: 11,
+            fontFamily: FONT,
+            cursor: moving ? "default" : "pointer",
+            padding: "8px 10px",
+            border: `1px solid ${moving === "done" ? C.border : "#00ff41"}`,
+            background: "transparent",
+            transition: "all 0.15s",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {moving === "done" ? "..." : "✓ FINISH"}
         </span>
       </div>
     </div>
@@ -740,7 +803,7 @@ export default function Home() {
   const [pollInterval, setPollInterval] = useState(300000); // default 5min
   const [showNewCard, setShowNewCard] = useState(false);
 
-  const IDEAS_LANE_ID = "2431674921";
+  const IDEAS_LANE_ID = LANE_IDEAS;
 
   const openNewCard = () => { setSelected(null); setShowNewCard(true); };
   const closeNewCard = () => setShowNewCard(false);
@@ -923,7 +986,11 @@ export default function Home() {
             onCreated={fetchBoard}
           />
         ) : (
-          <DetailPanel card={selected} onClose={() => setSelected(null)} />
+          <DetailPanel
+            card={selected}
+            onClose={() => setSelected(null)}
+            onBoardRefresh={fetchBoard}
+          />
         )}
       </div>
 
