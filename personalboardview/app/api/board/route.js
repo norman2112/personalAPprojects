@@ -36,16 +36,17 @@ const LANE_CONFIG = [
   { id: "2431674919", name: "DONE", status: "done" },
 ];
 
-export async function GET() {
-  try {
-    if (!TOKEN || !BOARD_ID) {
-      return Response.json(
-        { error: "Missing AGILEPLACE_API_TOKEN or AGILEPLACE_BOARD_ID" },
-        { status: 500 }
-      );
-    }
+/**
+ * @param {{ includeFullCard?: boolean }} [options]
+ */
+export async function getBoardPayload(options = {}) {
+  const { includeFullCard = false } = options;
 
-    // Fetch board structure and cards in parallel
+  if (!TOKEN || !BOARD_ID) {
+    return { error: "Missing AGILEPLACE_API_TOKEN or AGILEPLACE_BOARD_ID" };
+  }
+
+  try {
     const [data, cardsData] = await Promise.all([
       apiFetch(`/board/${BOARD_ID}`),
       apiFetch(`/board/${BOARD_ID}/card`),
@@ -56,26 +57,27 @@ export async function GET() {
       laneId: String(card.laneId),
     }));
 
-    // Also grab card types for color mapping
     const cardTypes = data?.cardTypes || [];
 
-    // Build lane → cards map
     const lanes = LANE_CONFIG.map((laneConf) => {
       const cards = allCards
         .filter((c) => String(c.laneId) === String(laneConf.id))
-        .map((c) => ({
-          id: c.id,
-          title: c.title,
-          header: c.customId?.value || "",
-          description: c.description || "",
-          priority: c.priority || "normal",
-          tags: c.tags || [],
-          color: c.color || "#00ff41",
-          typeName: c.cardType?.name || "Unknown",
-          isBlocked: c.blockedStatus?.isBlocked || false,
-          blockReason: c.blockedStatus?.reason || "",
-          icon: c.customIcon?.iconName || "",
-        }));
+        .map((c) => {
+          const slim = {
+            id: c.id,
+            title: c.title,
+            header: c.customId?.value || "",
+            description: c.description || "",
+            priority: c.priority || "normal",
+            tags: c.tags || [],
+            color: c.color || "#00ff41",
+            typeName: c.cardType?.name || "Unknown",
+            isBlocked: c.blockedStatus?.isBlocked || false,
+            blockReason: c.blockedStatus?.reason || "",
+            icon: c.customIcon?.iconName || "",
+          };
+          return includeFullCard ? { ...slim, fullCard: c } : slim;
+        });
 
       return {
         ...laneConf,
@@ -86,7 +88,7 @@ export async function GET() {
 
     const totalCards = lanes.reduce((sum, l) => sum + l.count, 0);
 
-    return Response.json({
+    return {
       boardId: BOARD_ID,
       host: HOST,
       lanes,
@@ -97,9 +99,17 @@ export async function GET() {
         color: t.cardColor,
       })),
       fetchedAt: new Date().toISOString(),
-    });
+    };
   } catch (err) {
     console.error("Board fetch error:", err);
-    return Response.json({ error: err.message }, { status: 500 });
+    return { error: err.message };
   }
+}
+
+export async function GET(request) {
+  const url = new URL(request.url);
+  const includeFullCard = url.searchParams.get("full") === "1";
+  const payload = await getBoardPayload({ includeFullCard });
+  const status = payload.error ? 500 : 200;
+  return Response.json(payload, { status });
 }
