@@ -18,6 +18,7 @@ async function apiFetch(path) {
         Accept: "application/json",
       },
       cache: "no-store",
+      next: { revalidate: 0 },
       signal: controller.signal,
     });
     if (!res.ok) throw new Error(`AgilePlace ${res.status}: ${res.statusText}`);
